@@ -11,12 +11,13 @@ import (
 
 var _ = Describe("Storymate CLI tool", func() {
 	var (
-		session *gexec.Session
-		envs    *envVars
+		session       *gexec.Session
+		envs          *envVars
+		commandFlag   string
 	)
 
 	JustBeforeEach(func() {
-		cmd := exec.Command(storymateBinary)
+		cmd := exec.Command(storymateBinary, commandFlag)
 		cmd.Env = envs.toStringArray()
 
 		var err error
@@ -25,19 +26,42 @@ var _ = Describe("Storymate CLI tool", func() {
 	})
 
 	BeforeEach(func() {
-
+		commandFlag = ""
 		envs = &envVars{trackerApiKey: "TEST_API_KEY", trackerProjectID: "TEST_PROJECT_ID"}
+	})
+
+	Context("help text/usage", func() {
+		Context("--help", func() {
+			BeforeEach(func() {
+				commandFlag = "--help"
+			})
+
+			It("displays the help text when the --help flag is present", func() {
+				Eventually(session.Err).Should(Say("Usage"))
+				Eventually(session.Err).Should(Say("Requires"))
+			})
+		})
+		Context("-h", func() {
+			BeforeEach(func() {
+				commandFlag = "-h"
+			})
+
+			It("displays the help text when the --help flag is present", func() {
+				Eventually(session.Err).Should(Say("Usage"))
+				Eventually(session.Err).Should(Say("Requires"))
+			})
+		})
 	})
 
 	Context("when the app is not configured correctly", func() {
 		Context("Tracker API Key", func(){
-		BeforeEach(func() {
-			envs.trackerApiKey = ""
-		})
+			BeforeEach(func() {
+				envs.trackerApiKey = ""
+			})
 
-		It("logs that the API Key is not set", func() {
-			Eventually(session.Err).Should(Say("missing TRACKER_API_KEY environment variable"))
-		})
+			It("logs that the API Key is not set", func() {
+				Eventually(session.Err).Should(Say("missing TRACKER_API_KEY environment variable"))
+			})
 		})
 
 		Context("Project ID", func() {
