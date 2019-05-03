@@ -5,11 +5,26 @@ import (
 	"log"
 	"os"
 	"flag"
+	"net/http"
+	"io/ioutil"
+	"encoding/json"
+	"time"
 )
+var trackerServerURL string
+var trackerAPIKey string
+var trackerProjectID string
+
+type Story struct {
+	Id     int
+	Name   string
+	URL    string
+}
 
 func main() {
 	validateFlags()
 	validateEnvVars()
+
+	fetchStartedStories()
 }
 
 func validateFlags() {
@@ -21,15 +36,55 @@ func validateFlags() {
 }
 
 func validateEnvVars() {
-	trackerApiKey := os.Getenv("TRACKER_API_KEY")
-	trackerProjectID := os.Getenv("TRACKER_PROJECT_ID")
+	trackerAPIKey = os.Getenv("TRACKER_API_KEY")
+	trackerProjectID = os.Getenv("TRACKER_PROJECT_ID")
+	trackerServerURL = os.Getenv("TRACKER_SERVER_URL")
 
-	if trackerApiKey == "" {
+	if trackerAPIKey == "" {
 		log.Fatal(fmt.Sprintf("missing TRACKER_API_KEY environment variable"))
 	}
 
 	if trackerProjectID == "" {
 		log.Fatal(fmt.Sprintf("missing TRACKER_PROJECT_ID environment variable"))
+	}
+	if trackerServerURL == "" {
+		trackerServerURL = "https://www.pivotaltracker.com"
+	}
+}
+
+func fetchStartedStories() {
+	fmt.Println("Fetching stories from Pivotal Tracker...")
+
+	req, err := http.NewRequest("GET", trackerServerURL+"/services/v5/projects/"+trackerProjectID+"/stories", nil)
+	if err != nil {
+		log.Fatal("Error reading request. ", err)
+	}
+	req.Header.Set("X-TrackerToken", trackerAPIKey)
+	q := req.URL.Query()
+	q.Add("with_state", "started")
+	req.URL.RawQuery = q.Encode()
+
+	client := &http.Client{Timeout: time.Second * 10}
+
+	res, err := client.Do(req)
+	if err != nil {
+		log.Fatal("Error reading response. ", err)
+	}
+
+	var stories []Story
+
+	defer res.Body.Close()
+	trackerStoriesJson, _ := ioutil.ReadAll(res.Body)
+
+	err = json.Unmarshal(trackerStoriesJson, &stories)
+
+	if err != nil {
+		fmt.Println("There was an error unmarshalling the stories:", err)
+		fmt.Println("Body: ", trackerStoriesJson)
+	}
+
+	for _, story := range stories {
+		fmt.Println(story.Id)
 	}
 }
 
