@@ -9,22 +9,20 @@ import (
 	"io/ioutil"
 	"encoding/json"
 	"time"
+
+	"github.com/lurraca/storymate/ui"
+	. "github.com/lurraca/storymate/models"
 )
 var trackerServerURL string
 var trackerAPIKey string
 var trackerProjectID string
 
-type Story struct {
-	Id     int
-	Name   string
-	URL    string
-}
-
 func main() {
 	validateFlags()
 	validateEnvVars()
 
-	fetchStartedStories()
+	stories := fetchStartedStories()
+	fmt.Println(ui.FormattedStories(stories))
 }
 
 func validateFlags() {
@@ -52,7 +50,7 @@ func validateEnvVars() {
 	}
 }
 
-func fetchStartedStories() {
+func fetchStartedStories() []Story {
 	fmt.Println("Fetching stories from Pivotal Tracker...")
 
 	req, err := http.NewRequest("GET", trackerServerURL+"/services/v5/projects/"+trackerProjectID+"/stories", nil)
@@ -83,9 +81,7 @@ func fetchStartedStories() {
 		fmt.Println("Body: ", trackerStoriesJson)
 	}
 
-	for _, story := range stories {
-		fmt.Println(story.Id)
-	}
+	return stories
 }
 
 func usageText() string {

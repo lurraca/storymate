@@ -102,8 +102,8 @@ var _ = Describe("Storymate CLI tool", func() {
 		It("display stories IDs that the user owns", func() {
 			Eventually(session).Should(Say("Fetching stories from Pivotal Tracker..."))
 			Eventually(trackerAPIServer.ReceivedRequests()).Should(HaveLen(1))
-			Eventually(session).Should(Say("155484889"))
-			Eventually(session).Should(Say("155484559"))
+			Eventually(session).Should(Say(`1\) 155484889 | The Beauty and the Beast`))
+			Eventually(session).Should(Say(`2\) 155484559 | The Beauty and the Beat`))
 		})
 	})
 })
