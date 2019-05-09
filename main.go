@@ -9,6 +9,9 @@ import (
 	"io/ioutil"
 	"encoding/json"
 	"time"
+	"bufio"
+	"strconv"
+	"errors"
 
 	"github.com/lurraca/storymate/ui"
 	. "github.com/lurraca/storymate/models"
@@ -22,7 +25,46 @@ func main() {
 	validateEnvVars()
 
 	stories := fetchStartedStories()
-	fmt.Println(ui.FormattedStories(stories))
+	fmt.Println(ui.PrintFormattedStories(stories))
+	optionsStories := ui.FormattedStories(stories)
+
+	var chosenStoryId int
+	var err error
+
+	for {
+		chosenStoryId, err = userChooseStory(optionsStories)
+		if err != nil {
+			fmt.Println(err)
+		} else {
+			break
+		}
+	}
+
+	outputStr := fmt.Sprintf("You chose #%d", chosenStoryId)
+	fmt.Println(outputStr)
+}
+
+func userChooseStory(stories map[int]Story) (int, error) {
+	 userInput, err := readOption()
+	 if err != nil {
+		 return 0, errors.New("Invalid option, make sure you input a numeric option")
+	 }
+
+	chosenStory, present := stories[userInput]
+	if !present {
+		return 0, errors.New("Invalid option, make sure your input is shown on the list of stories")
+	}
+
+	return chosenStory.Id, nil
+
+}
+
+func readOption() (int, error) {
+	fmt.Println("Choose the story you are working on, mate: ")
+	reader := bufio.NewReader(os.Stdin)
+	inputBytes, _, _ := reader.ReadLine()
+	storyOption, strConvErr := strconv.Atoi(string(inputBytes))
+	return storyOption, strConvErr
 }
 
 func validateFlags() {

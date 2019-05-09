@@ -8,6 +8,7 @@ import (
 	"github.com/onsi/gomega/ghttp"
 	"net/http"
 	"os/exec"
+	"io"
 )
 
 var _ = Describe("Storymate CLI tool", func() {
@@ -24,21 +25,15 @@ var _ = Describe("Storymate CLI tool", func() {
 		envs = &envVars{trackerAPIKey: "TEST_API_KEY", trackerProjectID: "TEST_PROJECT_ID", trackerServerURL: trackerAPIServer.URL()}
 	})
 
-	JustBeforeEach(func() {
-		cmd := exec.Command(storymateBinary, commandFlag)
-		cmd.Env = envs.toStringArray()
-
-		var err error
-		session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-		Expect(err).NotTo(HaveOccurred())
-	})
-
-
 	AfterEach(func() {
 		trackerAPIServer.Close()
 	})
 
 	Context("help text/usage", func() {
+		JustBeforeEach(func() {
+			session = loadApp(envs.toStringArray(), commandFlag)
+		})
+
 		Context("--help", func() {
 			BeforeEach(func() {
 				commandFlag = "--help"
@@ -64,6 +59,10 @@ var _ = Describe("Storymate CLI tool", func() {
 	})
 
 	Context("when the app is not configured correctly", func() {
+		JustBeforeEach(func() {
+			session = loadApp(envs.toStringArray(), commandFlag)
+		})
+
 		Context("Tracker API Key", func(){
 			BeforeEach(func() {
 				envs.trackerAPIKey = ""
@@ -87,8 +86,7 @@ var _ = Describe("Storymate CLI tool", func() {
 		})
 	})
 
-	Context("when the app is configured correctly", func() {
-
+	When("the app is configured correctly", func() {
 		BeforeEach(func() {
 			trackerAPIServer.AppendHandlers(
 				ghttp.CombineHandlers(
@@ -100,10 +98,41 @@ var _ = Describe("Storymate CLI tool", func() {
 		})
 
 		It("display stories IDs that the user owns", func() {
+			stdin := userInput("1")
+			session = loadAppWithStdin(stdin, envs.toStringArray(), commandFlag)
+
 			Eventually(session).Should(Say("Fetching stories from Pivotal Tracker..."))
 			Eventually(trackerAPIServer.ReceivedRequests()).Should(HaveLen(1))
 			Eventually(session).Should(Say(`1\) 155484889 | The Beauty and the Beast`))
 			Eventually(session).Should(Say(`2\) 155484559 | The Beauty and the Beat`))
+		})
+
+		It("Prompts the user to choose a story", func() {
+			stdin := userInput("1")
+			session = loadAppWithStdin(stdin, envs.toStringArray(), commandFlag)
+
+			Eventually(session).Should(Say("Choose the story you are working on, mate:"))
+			Eventually(session).Should(Say("You chose #155484889"))
+		})
+
+		When("the user input it's not an integer", func() {
+			It("displays a note and prompts again", func () {
+				stdin := userInput("NaN")
+
+				session = loadAppWithStdin(stdin, envs.toStringArray(), commandFlag)
+				Eventually(session).Should(Say("Invalid option, make sure you input a numeric option"))
+				Eventually(session).Should(Say("Choose the story you are working on, mate:"))
+			})
+		})
+
+		When("the user input it's not a valid option", func() {
+			It("displays a note and prompts again", func () {
+				stdin := userInput("100")
+
+				session = loadAppWithStdin(stdin, envs.toStringArray(), commandFlag)
+				Eventually(session).Should(Say("Invalid option, make sure your input is shown on the list of stories"))
+				Eventually(session).Should(Say("Choose the story you are working on, mate:"))
+			})
 		})
 	})
 })
@@ -128,4 +157,30 @@ func (e *envVars) toStringArray() []string {
 	}
 
 	return result
+}
+
+func userInput(input string) io.Reader {
+	stdin := NewBuffer()
+	_, err := stdin.Write([]byte(input+"\n"))
+	Expect(err).ToNot(HaveOccurred())
+	return stdin
+}
+
+func loadApp(envs []string, args ...string) *gexec.Session {
+	cmd := exec.Command(storymateBinary, args...)
+	cmd.Env = envs
+
+	session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+	Expect(err).NotTo(HaveOccurred())
+	return session
+}
+
+func loadAppWithStdin(stdin io.Reader, envs []string, args ...string) *gexec.Session {
+	cmd := exec.Command(storymateBinary, args...)
+	cmd.Env = envs
+	cmd.Stdin = stdin
+
+	session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+	Expect(err).NotTo(HaveOccurred())
+	return session
 }

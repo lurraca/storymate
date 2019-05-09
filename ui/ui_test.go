@@ -10,24 +10,43 @@ import (
 
 var _ = Describe("UI", func() {
 	var stories []Story
-	Context("when given stories", func(){
-		var stories []Story
-		BeforeEach(func() {
-			stories = []Story{
-				Story{Id: 123, Name: "The Beauty and the beast", URL: "https://example.com"},
-				Story{Id: 456, Name: "The Beauty and the beat", URL: "https://example.com"},
-			}
+
+	Describe("#PrintFormattedStories", func() {
+		Context("when given stories", func(){
+			var stories []Story
+			BeforeEach(func() {
+				stories = []Story{
+					Story{Id: 123, Name: "The Beauty and the beast", URL: "https://example.com"},
+					Story{Id: 456, Name: "The Beauty and the beat", URL: "https://example.com"},
+				}
+			})
+			It("return a string with formatted stories", func() {
+				formattedStoriesString := ui.PrintFormattedStories(stories)
+				Expect(formattedStoriesString).To(ContainSubstring("1) #123 | The Beauty and the beast\n2) #456 | The Beauty and the beat"))
+			})
 		})
-		It("return a string with formatted stories", func() {
-			formattedStories := ui.FormattedStories(stories)
-			Expect(formattedStories).To(ContainSubstring("1) #123 | The Beauty and the beast\n2) #456 | The Beauty and the beat"))
+
+		Context("when there are no stories", func() {
+			It("returns an empty string", func() {
+				formattedStoriesString := ui.PrintFormattedStories(stories)
+				Expect(formattedStoriesString).To(Equal(""))
+			})
 		})
 	})
 
-	Context("when there are no stories", func() {
-		It("returns an empty string", func() {
-			formattedStories := ui.FormattedStories(stories)
-			Expect(formattedStories).To(Equal(""))
+	Describe("#FormattedStories", func() {
+		Context("when given stories", func(){
+			var stories []Story
+			BeforeEach(func() {
+				stories = []Story{
+					Story{Id: 123, Name: "The Beauty and the beast", URL: "https://example.com"},
+					Story{Id: 456, Name: "The Beauty and the beat", URL: "https://example.com"},
+				}
+			})
+			It("return a string with formatted stories", func() {
+				formattedStories := ui.FormattedStories(stories)
+				Expect(formattedStories[2].Id).To(Equal(456))
+			})
 		})
 	})
 })
