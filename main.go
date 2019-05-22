@@ -12,6 +12,9 @@ import (
 	"bufio"
 	"strconv"
 	"errors"
+	"path/filepath"
+
+	"github.com/mitchellh/go-homedir"
 
 	"github.com/lurraca/storymate/ui"
 	. "github.com/lurraca/storymate/models"
@@ -28,23 +31,34 @@ func main() {
 	fmt.Println(ui.PrintFormattedStories(stories))
 	optionsStories := ui.FormattedStories(stories)
 
+	chosenStoryId := userChooseStory(optionsStories)
+
+	outputStr := fmt.Sprintf("You chose #%d", chosenStoryId)
+	fmt.Println(outputStr)
+	homeDir, _ := homedir.Dir()
+	pathToGitMessageFile := filepath.Join(homeDir, ".gitmessage")
+	err := ioutil.WriteFile(pathToGitMessageFile, []byte("very important message"), 0644)
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+
+func userChooseStory(stories map[int]Story) int {
 	var chosenStoryId int
 	var err error
 
 	for {
-		chosenStoryId, err = userChooseStory(optionsStories)
+		chosenStoryId, err = sanitizeUserInput(stories)
 		if err != nil {
 			fmt.Println(err)
 		} else {
 			break
 		}
 	}
-
-	outputStr := fmt.Sprintf("You chose #%d", chosenStoryId)
-	fmt.Println(outputStr)
+	return chosenStoryId
 }
 
-func userChooseStory(stories map[int]Story) (int, error) {
+func sanitizeUserInput(stories map[int]Story) (int, error) {
 	 userInput, err := readOption()
 	 if err != nil {
 		 return 0, errors.New("Invalid option, make sure you input a numeric option")
@@ -70,8 +84,8 @@ func readOption() (int, error) {
 func validateFlags() {
 	var CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 	flag.Usage = func() {
-        fmt.Fprintf(CommandLine.Output(), usageText())
-			}
+		fmt.Fprintf(CommandLine.Output(), usageText())
+	}
 	flag.Parse()
 }
 
