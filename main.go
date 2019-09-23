@@ -14,6 +14,7 @@ import (
 	"errors"
 	"path/filepath"
 
+	// "github.com/spf13/afero"
 	"github.com/mitchellh/go-homedir"
 
 	"github.com/lurraca/storymate/ui"
@@ -34,10 +35,17 @@ func main() {
 	chosenStoryId := userChooseStory(optionsStories)
 
 	outputStr := fmt.Sprintf("You chose #%d", chosenStoryId)
+
 	fmt.Println(outputStr)
+
 	homeDir, _ := homedir.Dir()
 	pathToGitMessageFile := filepath.Join(homeDir, ".gitmessage")
-	err := ioutil.WriteFile(pathToGitMessageFile, []byte("very important message"), 0644)
+
+
+	gitMessage := fmt.Sprintf("\n\n[#%d](https://www.pivotaltracker.com/story/show/%d)\n", chosenStoryId, chosenStoryId)
+
+	err := ioutil.WriteFile(pathToGitMessageFile, []byte(gitMessage), 0644)
+
 	if err != nil {
 		fmt.Println(err)
 	}

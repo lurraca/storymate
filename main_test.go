@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os/exec"
 	"io"
+	// "github.com/spf13/afero"
 )
 
 var _ = Describe("Storymate CLI tool", func() {
@@ -114,6 +115,22 @@ var _ = Describe("Storymate CLI tool", func() {
 			Eventually(session).Should(Say("Choose the story you are working on, mate:"))
 			Eventually(session).Should(Say("You chose #155484889"))
 		})
+
+		// FIt("Writes the choosen story ID to ~/.gitmessage", func() {
+		// 	stdin := userInput("1")
+		// 	session = loadAppWithStdin(stdin, envs.toStringArray(), commandFlag)
+    //
+		// 	Eventually(session).Should(Say("Choose the story you are working on, mate:"))
+		// 	Eventually(session).Should(Say("You chose #155484889"))
+    //
+		// 	testFS := afero.NewMemMapFs()
+    //
+		// 	testFS.MkdirAll("~/", 0755)
+		// 	afero.WriteFile(testFS, "~/.gitmessage", []byte("[#155484889]"), 0644)
+    //
+		// 	fileInBytes, _ := afero.ReadFile(testFS,	"~/.gitmessage")
+		// 	Expect(string(fileInBytes)).To(Equal("[#155484889]"))
+		// })
 
 		When("the user input it's not an integer", func() {
 			It("displays a note and prompts again", func () {
